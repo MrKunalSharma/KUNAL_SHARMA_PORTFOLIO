@@ -6,7 +6,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+  const [navbarHeight, setNavbarHeight] = useState(0);
 
   // Navigation links
   const navLinks = [
@@ -19,229 +19,219 @@ const Navbar = () => {
     { name: 'Contact', href: '#contact' },
   ];
 
-  // Handle window resize
+  // Get navbar height for scroll offset calculation
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-      if (window.innerWidth >= 768) {
-        setIsMenuOpen(false); // Close mobile menu when resizing to desktop
-      }
+    const updateNavHeight = () => {
+      const navbar = document.getElementById('navbar');
+      if (navbar) setNavbarHeight(navbar.offsetHeight);
     };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    updateNavHeight();
+    window.addEventListener('resize', updateNavHeight);
+    return () => window.removeEventListener('resize', updateNavHeight);
   }, []);
 
   // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
-      // Determine if navbar should change style
-      if (window.scrollY > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-
-      // Determine active section
-      const sections = navLinks.map(link => link.href.substring(1));
-      
-      const currentSection = sections.find(section => {
-        const element = document.getElementById(section);
-        if (!element) return false;
-        
-        const rect = element.getBoundingClientRect();
-        return rect.top <= 150 && rect.bottom >= 150;
+      setScrolled(window.scrollY > 50);
+      // Detect active section
+      let current = 'home';
+      navLinks.forEach(link => {
+        const section = document.getElementById(link.href.substring(1));
+        if (section) {
+          const offset = section.offsetTop - navbarHeight - 40;
+          if (window.scrollY >= offset) {
+            current = link.href.substring(1);
+          }
+        }
       });
-
-      if (currentSection) {
-        setActiveSection(currentSection);
-      }
+      setActiveSection(current);
     };
-
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [navbarHeight, navLinks]);
 
-  // Close menu when a link is clicked
-  const handleLinkClick = () => {
-    setIsMenuOpen(false);
-  };
-
-  // Animation variants
-  const mobileMenuVariants = {
-    closed: {
-      opacity: 0,
-      y: -20,
-      transition: {
-        duration: 0.3
-      }
-    },
-    open: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        staggerChildren: 0.07,
-        delayChildren: 0.2
-      }
+  // Smooth scroll helper
+  const handleSmoothScroll = (e, id) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      const scrollY = el.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+      window.scrollTo({ top: scrollY, behavior: 'smooth' });
+      window.history.replaceState(null, '', `#${id}`);
+      setActiveSection(id);
     }
   };
 
-  const menuItemVariants = {
-    closed: { opacity: 0, y: -10 },
-    open: { opacity: 1, y: 0 }
-  };
-
   return (
-    <header 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-gray-900/90 backdrop-blur-md shadow-lg py-2 sm:py-3' 
-          : 'bg-transparent py-3 sm:py-5'
-      }`}
-    >
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-16 flex justify-between items-center">
-        {/* Logo */}
-        <motion.a 
-          href="#home" 
-          className="flex items-center group"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 mr-2 overflow-hidden rounded-full border-2 border-indigo-500/30 group-hover:border-indigo-500 transition-colors duration-300">
-            {/* Logo image */}
-            <motion.img 
-              src="/logo.jpg" 
-              alt="Kunal Sharma Logo" 
-              className="w-full h-full object-cover"
-              whileHover={{ scale: 1.15 }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-          <div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500 text-xl sm:text-2xl font-bold">
-              Kunal
-            </span>
-            <span className="text-white text-xl sm:text-2xl font-bold">Sharma</span>
-          </div>
-        </motion.a>
+    <>
+      <motion.nav
+        id="navbar"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-gray-900/90 backdrop-blur-md shadow-lg py-2 sm:py-3'
+            : 'bg-transparent py-3 sm:py-5'
+        }`}
+      >
+        <div className="container mx-auto px-4 sm:px-6 lg:px-16 flex justify-between items-center">
+          {/* Logo */}
+          <motion.a
+            href="#home"
+            className="flex items-center group cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            onClick={e => handleSmoothScroll(e, 'home')}
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 mr-2 overflow-hidden rounded-full border-2 border-indigo-500/30 group-hover:border-indigo-500 transition-colors duration-300">
+              <motion.img
+                src="/logo.jpg"
+                alt="Kunal Sharma Logo"
+                className="w-full h-full object-cover"
+                whileHover={{ scale: 1.15 }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <div>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500 text-xl sm:text-2xl font-bold">
+                Kunal
+              </span>
+              <span className="text-white text-xl sm:text-2xl font-bold">Sharma</span>
+            </div>
+          </motion.a>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
-          {navLinks.map((link, index) => (
-            <motion.a
-              key={link.name}
-              href={link.href}
-              className={`text-sm lg:text-base font-medium px-3 py-2 rounded-lg transition-all duration-300 hover:bg-indigo-500/10 hover:text-indigo-400 ${
-                activeSection === link.href.substring(1)
-                  ? 'text-indigo-400 bg-indigo-500/10'
-                  : 'text-gray-300'
-              }`}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -2 }}
-              whileTap={{ y: 0 }}
-            >
-              {link.name}
-            </motion.a>
-          ))}
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            {navLinks.map((link, index) => (
+              <motion.a
+                key={link.name}
+                href={link.href}
+                className={`cursor-pointer text-sm lg:text-base font-medium px-3 py-2 rounded-lg transition-all duration-300 hover:bg-indigo-500/10 hover:text-indigo-400 ${
+                  activeSection === link.href.substring(1)
+                    ? 'text-indigo-400 bg-indigo-500/10'
+                    : 'text-gray-300'
+                }`}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -2 }}
+                whileTap={{ y: 0 }}
+                onClick={e => handleSmoothScroll(e, link.href.substring(1))}
+              >
+                {link.name}
+              </motion.a>
+            ))}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <motion.button
+            type="button"
+            className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-gray-800/70 text-gray-300 focus:outline-none"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'Close Menu' : 'Open Menu'}
+            whileHover={{ scale: 1.1, backgroundColor: 'rgba(79, 70, 229, 0.2)' }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+          </motion.button>
         </div>
+      </motion.nav>
 
-        {/* Mobile Menu Button */}
-        <motion.button
-          type="button"
-          className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-gray-800/70 text-gray-300 focus:outline-none"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label={isMenuOpen ? 'Close Menu' : 'Open Menu'}
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(79, 70, 229, 0.2)' }}
-          whileTap={{ scale: 0.9 }}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-        </motion.button>
-      </nav>
-
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Right side slide-in */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div
-            className="fixed inset-0 bg-gray-900/95 backdrop-blur-lg flex flex-col justify-center items-center z-40 md:hidden"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={mobileMenuVariants}
-          >
-            <motion.div 
-              className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center"
+          <>
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <motion.div 
-                className="absolute h-20 w-20 bg-indigo-500/20 rounded-full"
-                animate={{ 
-                  scale: [1, 1.5, 1],
-                  opacity: [0.3, 0.2, 0.3]
-                }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-            </motion.div>
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 z-40 md:hidden"
+              style={{ backdropFilter: 'blur(4px)' }}
+            />
 
-            <motion.div 
-              className="flex flex-col items-center space-y-6"
-              variants={mobileMenuVariants}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="fixed right-0 top-0 h-full w-[50%] bg-gray-900/95 backdrop-blur-lg z-50 md:hidden shadow-xl"
             >
-              {navLinks.map((link, index) => (
-                <motion.div
-                  key={link.name}
-                  variants={menuItemVariants}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  custom={index}
-                >
-                  <a
-                    href={link.href}
-                    className={`text-xl font-medium px-6 py-2 rounded-lg transition-all duration-300 hover:bg-indigo-500/20 ${
-                      activeSection === link.href.substring(1)
-                        ? 'text-indigo-400 bg-indigo-500/10'
-                        : 'text-gray-300'
-                    }`}
-                    onClick={handleLinkClick}
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center p-6 border-b border-gray-800/50">
+                  <h2 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">
+                    Menu
+                  </h2>
+                  <motion.button
+                    className="flex items-center justify-center h-10 w-10 rounded-lg bg-gray-800/70 text-gray-300 focus:outline-none"
+                    onClick={() => setIsMenuOpen(false)}
+                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(79, 70, 229, 0.2)' }}
+                    whileTap={{ scale: 0.9 }}
                   >
-                    {link.name}
-                  </a>
-                </motion.div>
-              ))}
+                    <FaTimes size={20} />
+                  </motion.button>
+                </div>
+                
+                <div className="flex-1 px-6 py-6 overflow-y-auto">
+                  <div className="flex flex-col space-y-4">
+                    {navLinks.map((link, index) => (
+                      <motion.div
+                        key={link.name}
+                        initial={{ x: 50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.07 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <a
+                          href={link.href}
+                          className={`cursor-pointer block py-3 px-4 rounded-lg text-base font-medium transition-all duration-300 ${
+                            activeSection === link.href.substring(1)
+                              ? 'text-indigo-400 bg-indigo-500/10'
+                              : 'text-gray-300 hover:text-indigo-400 hover:bg-indigo-500/10'
+                          }`}
+                          onClick={e => {
+                            setIsMenuOpen(false);
+                            handleSmoothScroll(e, link.href.substring(1));
+                          }}
+                        >
+                          {link.name}
+                        </a>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom hint with down arrow */}
+                <div className="p-6 border-t border-gray-800/50">
+                  <motion.div 
+                    className="flex flex-col items-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <p className="text-gray-500 text-sm mb-2">Tap to navigate</p>
+                    <motion.div
+                      animate={{ y: [0, 5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <FaChevronDown className="text-indigo-400" />
+                    </motion.div>
+                  </motion.div>
+                </div>
+              </div>
             </motion.div>
-            
-            {/* Bottom hint */}
-            <motion.div 
-              className="absolute bottom-10 flex flex-col items-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              <p className="text-gray-500 text-sm mb-2">Tap to navigate</p>
-              <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <FaChevronDown className="text-indigo-400" />
-              </motion.div>
-            </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 };
 
