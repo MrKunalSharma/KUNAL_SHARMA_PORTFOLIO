@@ -168,8 +168,8 @@ const Hero = () => {
             >
               {/* Social icons */}
               {[
-                { icon: <FaGithub />, href: "https://www.linkedin.com/in/kunal-sharma-1a8457257/", ariaLabel: "GitHub Profile" },
-                { icon: <FaLinkedin />, href: "https://linkedin.com/in/kunalsharma", ariaLabel: "LinkedIn Profile" },
+                { icon: <FaGithub />, href: "https://github.com/MrKunalSharma", ariaLabel: "GitHub Profile" },
+                { icon: <FaLinkedin />, href: "https://www.linkedin.com/in/kunal-sharma-1a8457257/", ariaLabel: "LinkedIn Profile" },
                 { icon: <FaEnvelope />, href: "mailto:kunalsharma13579kunals@gmail.com", ariaLabel: "Email Me" }
               ].map((social, idx) => (
                 <motion.div
